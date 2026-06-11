@@ -1,0 +1,7 @@
+streamlit>=1.36
+plotly>=5.22
+pandas>=2.2
+requests>=2.31
+google-genai>=0.3
+streamlit-local-storage>=0.0.20
+xlsxwriter>=3.2

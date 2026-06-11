@@ -1,0 +1,17 @@
+# Secrets — NUNCA subir
+.streamlit/secrets.toml
+
+# Entorno virtual
+.venv/
+venv/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Sistema operativo / editor
+.DS_Store
+.vscode/
+.idea/

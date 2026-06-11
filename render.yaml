@@ -1,0 +1,10 @@
+# Configuración de deploy para Render (https://render.com)
+# Con este archivo en el repo, Render detecta el servicio automáticamente.
+services:
+  - type: web
+    name: planificador-finanzas
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    # Render expone el puerto en la variable $PORT; Streamlit debe escucharlo.
+    startCommand: streamlit run app.py --server.port $PORT --server.address 0.0.0.0 --server.headless true
