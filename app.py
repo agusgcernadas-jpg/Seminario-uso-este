@@ -215,107 +215,58 @@ def recomendar_instrumento_avanzado(
             "emoji": "🟡",
         }
 
-    # ── Clasificación por score + plazo ────────────────────────────────────
-    usa_etf = conocimiento_score < 30  # baja literacy → ETFs/FCI sobre acciones
-
+    # ── Clasificación por score ─────────────────────────────────────────────
     if risk_score <= 20:
         return {
-            "tipo": "Renta Fija / Bonos Cortos",
-            "alternativas": ["FCI renta fija", "Plazo fijo UVA", "Letras del Tesoro"],
+            "tipo": "Cartera de Preservación",
+            "alternativas": ["FCI money market", "Plazo fijo UVA", "Lecaps cortas"],
             "descripcion": (
-                "Perfil muy conservador: capital preservado es la prioridad absoluta. "
-                "Instrumentos de renta fija con baja duration y emisores de alta calidad."
+                "La prioridad es no perder. Capital protegido y disponible, con instrumentos "
+                "de bajo riesgo y corto plazo. Casi todo en renta fija indexada a inflación o dólar."
             ),
             "emoji": "🔵",
         }
 
     if risk_score <= 40:
-        if plazo_meses <= 24:
-            return {
-                "tipo": "Renta Fija con cobertura inflacionaria",
-                "alternativas": ["Bono CER", "FCI renta fija", "Plazo fijo UVA"],
-                "descripcion": (
-                    "Perfil conservador con horizonte medio. "
-                    "Instrumentos indexados a inflación para proteger el poder adquisitivo "
-                    "sin asumir volatilidad de renta variable."
-                ),
-                "emoji": "🟢",
-            }
         return {
-            "tipo": "Cartera Conservadora 80/20",
-            "alternativas": ["FCI renta fija (80%)", "FCI balanceado (20%)", "Bonos soberanos"],
+            "tipo": "Cartera Defensiva 75/25",
+            "alternativas": ["Bonos CER/UVA", "FCI renta fija", "CEDEARs de índice"],
             "descripcion": (
-                "80% renta fija diversificada + 20% activos con leve exposición a renta variable. "
-                "El horizonte permite absorber volatilidad menor."
+                "Crecer despacio sin sobresaltos. Mayoría en renta fija que le gana a la inflación, "
+                "con una porción chica en índices para sumar rendimiento."
             ),
             "emoji": "🟢",
         }
 
     if risk_score <= 60:
-        if plazo_meses <= 12:
-            return {
-                "tipo": "Renta Fija Diversificada",
-                "alternativas": ["FCI renta fija", "Bonos CER", "Letras ajustables"],
-                "descripcion": (
-                    "Perfil moderado pero horizonte corto: el tiempo no alcanza para "
-                    "recuperar caídas de renta variable. Se recomienda renta fija diversificada."
-                ),
-                "emoji": "🟡",
-            }
-        instrumento = "ETFs diversificados globales" if usa_etf else "CEDEARs de índices"
         return {
             "tipo": "Cartera Mixta 60/40",
-            "alternativas": ["FCI balanceado", instrumento, "Bonos soberanos en USD"],
+            "alternativas": ["FCI balanceado", "ETFs de índices", "Bonos soberanos en USD"],
             "descripcion": (
-                "60% renta fija + 40% renta variable. Equilibrio clásico entre estabilidad "
-                f"y crecimiento. {'Se priorizan ETFs de índices por bajo conocimiento declarado en acciones individuales.' if usa_etf else 'Con tu nivel de conocimiento podés incorporar CEDEARs selectivos.'}"
+                "Equilibrio clásico entre estabilidad y crecimiento. "
+                "Se priorizan ETFs de índices por sobre acciones individuales."
             ),
             "emoji": "🟡",
         }
 
     if risk_score <= 80:
-        if plazo_meses < 24:
-            return {
-                "tipo": "Cartera Mixta 50/50 con sesgo dinámico",
-                "alternativas": ["FCI balanceado", "ETFs globales", "Bonos USD"],
-                "descripcion": (
-                    "Perfil moderado-agresivo pero con horizonte limitado. "
-                    "Se modera la exposición a renta variable para evitar cristalizar pérdidas "
-                    "si el mercado cae cerca del momento de rescate."
-                ),
-                "emoji": "🟠",
-            }
-        instrumento = "ETFs de renta variable (S&P 500, MSCI)" if usa_etf else "Acciones / CEDEARs selectivos"
         return {
-            "tipo": "Cartera de Crecimiento 30/70",
-            "alternativas": [instrumento, "FCI renta variable", "Bonos HY en USD"],
+            "tipo": "Cartera de Crecimiento 40/60",
+            "alternativas": ["ETFs de renta variable", "Acciones / CEDEARs", "FCI renta fija"],
             "descripcion": (
-                "30% renta fija como colchón de liquidez + 70% renta variable. "
-                f"{'ETFs diversificados reducen el riesgo idiosincrático sin requerir selección de empresas individuales.' if usa_etf else 'Tu nivel de conocimiento te permite construir una cartera de acciones/CEDEARs con criterio propio.'}"
+                "El foco pasa a la renta variable. Más exposición a índices y acciones, "
+                "con la renta fija como ancla."
             ),
             "emoji": "🟠",
         }
 
     # score > 80: Agresivo
-    if plazo_meses < 36:
-        instrumento = "ETFs temáticos / sectoriales" if usa_etf else "Acciones locales e internacionales"
-        return {
-            "tipo": "Renta Variable con diversificación táctica",
-            "alternativas": [instrumento, "CEDEARs", "FCI renta variable"],
-            "descripcion": (
-                "Perfil agresivo con horizonte moderado. Alta exposición a renta variable "
-                "con diversificación geográfica y sectorial para mitigar concentración."
-            ),
-            "emoji": "🔴",
-        }
-    instrumento_rv = "ETFs de mercados emergentes y desarrollados" if usa_etf else "Acciones + CEDEARs + ETFs globales"
     return {
-        "tipo": "Renta Variable / Cartera de Alto Crecimiento",
-        "alternativas": [instrumento_rv, "Criptomonedas (fracción)", "REITs / Real assets"],
+        "tipo": "Cartera Agresiva 20/80",
+        "alternativas": ["ETFs globales", "Acciones / CEDEARs", "FCI renta variable"],
         "descripcion": (
-            "Horizonte largo + perfil agresivo: condiciones ideales para maximizar "
-            "rendimiento real. La diversificación geográfica y por clase de activo "
-            "es clave. El tiempo juega a favor: las caídas son oportunidades de compra."
+            "Máximo crecimiento, tolerando volatilidad. Cartera concentrada en renta variable "
+            "global, con un colchón mínimo de renta fija."
         ),
         "emoji": "🔴",
     }
@@ -2554,10 +2505,10 @@ _RESP_OK = {
     "r_diversif_q":  "Porque si algo sale mal en un lugar, no perdés todo",
 }
 _PQ = [
-    {"key":"r_10",         "sec":"Tolerancia al riesgo · 35%",    "q":"Guardaste $100.000 en algún lugar y al mes siguiente valen $90.000. ¿Qué hacés?",                                  "tipo":"radio",        "opts":["Los saco ya, no quiero perder más","Me preocupa pero los dejo un tiempo más","Los dejo, seguro se recupera","Pongo más plata, está barato"]},
-    {"key":"r_emocional",  "sec":"Tolerancia al riesgo · 35%",    "q":"Pusiste 3 sueldos en un lugar y en 2 semanas perdieron un 25% de su valor. ¿Cómo te sentís?",                     "tipo":"radio",        "opts":["Muy mal, necesito recuperar esa plata ya","Preocupado/a pero puedo esperar","Incómodo/a pero confío que se recupera","Tranquilo/a, sabía que podía pasar"]},
+    {"key":"r_10",         "sec":"Tolerancia al riesgo · 35%",    "q":"Si invertís $100.000 en un activo financiero y al mes siguiente ves que tu inversión cayó un 10%, ¿Qué harías?",  "tipo":"radio",        "opts":["Los saco ya, no quiero perder más","Me preocupa pero los dejo un tiempo más","Los dejo, seguro se recupera","Pongo más plata, está barato"]},
+    {"key":"r_emocional",  "sec":"Tolerancia al riesgo · 35%",    "q":"Si colocás un monto equivalente a 3 sueldos en un activo, y el mismo cae un 25%, ¿Cómo te sentís?",              "tipo":"radio",        "opts":["Muy mal, necesito recuperar esa plata ya","Preocupado/a pero puedo esperar","Incómodo/a pero confío que se recupera","Tranquilo/a, sabía que podía pasar"]},
     {"key":"r_30",         "sec":"Tolerancia al riesgo · 35%",    "q":"Esos $100.000 ahora valen $70.000. ¿Qué hacés?",                                                                   "tipo":"radio",        "opts":["Los saco todo ya","Saco la mitad para no perder más","Los dejo y espero que suban","Pongo más, es una oportunidad"]},
-    {"key":"r_pref",       "sec":"Tolerancia al riesgo · 35%",    "q":"Cuando ponés plata en algún lado, ¿qué es lo más importante para vos?",                                           "tipo":"radio",        "opts":["Que no baje nunca, aunque gane poco","Que crezca un poco sin sobresaltos","Que crezca bien aunque a veces baje","Que crezca lo máximo posible"]},
+    {"key":"r_pref",       "sec":"Tolerancia al riesgo · 35%",    "q":"Cuando colocás dinero en una inversión ¿Qué es lo más importante para vos?",                                    "tipo":"radio",        "opts":["Que no baje nunca, aunque gane poco","Que crezca un poco sin sobresaltos","Que crezca bien aunque a veces baje","Que crezca lo máximo posible"]},
     {"key":"r_crisis",     "sec":"Tolerancia al riesgo · 35%",    "q":"En momentos de crisis económica (2001, pandemia, devaluación fuerte), ¿cómo reaccionaste con tu plata?",          "tipo":"radio",        "opts":["La guardé en casa o en el banco","Me puse nervioso/a pero no hice nada","Lo tomé con calma y esperé","Aproveché para moverla a algo mejor","Todavía no tenía plata ahorrada"]},
     {"key":"r_estab",      "sec":"Situación financiera · 25%",    "q":"¿Cómo es tu fuente de ingresos hoy?",                                                                              "tipo":"radio",        "opts":["No tengo ingresos fijos o estoy sin trabajo","Trabajo por cuenta propia o mis ingresos varían","Tengo trabajo en relación de dependencia estable","Tengo más de una fuente de ingresos"]},
     {"key":"r_horizonte",  "sec":"Horizonte temporal · 20%",      "q":"¿Cuándo pensás que vas a necesitar usar la plata que invertís?",                                                   "tipo":"select_slider","opts":["Menos de 1 año","1 a 3 años","3 a 5 años","5 a 10 años","Más de 10 años"]},
@@ -2623,7 +2574,7 @@ with tab_perfil:
         <div class="cnt">Pregunta {_paso + 1} de {_TOTAL_PQ}</div>
         <div class="bar"><div class="fill"></div></div>
         <div class="card"><div class="qtxt">{_q['q']}</div></div>
-        """, height=120)
+        """, height=170)
 
         _prev = st.session_state.get(_q['key'])
         if _q['tipo'] == 'radio':
@@ -2751,17 +2702,9 @@ with tab_perfil:
                 <div style="background:{_score_color}; width:{_bar_pct}%; height:100%; transition:width 0.4s;"></div>
               </div>
               <div style="font-family:'Inter',sans-serif; font-size:0.88rem; color:var(--ink);">
-                <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--rule); padding-bottom:0.35rem;">
+                <div style="display:flex; justify-content:space-between; padding:0.35rem 0;">
                   <span style="color:var(--muted); text-transform:uppercase; letter-spacing:0.14em; font-size:0.72rem;">Objetivo</span>
                   <span>{objetivo_financiero}</span>
-                </div>
-                <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--rule); padding:0.35rem 0;">
-                  <span style="color:var(--muted); text-transform:uppercase; letter-spacing:0.14em; font-size:0.72rem;">Horizonte</span>
-                  <span>{horizonte_perfil}</span>
-                </div>
-                <div style="display:flex; justify-content:space-between; padding-top:0.35rem;">
-                  <span style="color:var(--muted); text-transform:uppercase; letter-spacing:0.14em; font-size:0.72rem;">Conocimiento</span>
-                  <span>{int(conocimiento_score)} / 100</span>
                 </div>
               </div>
             </div>
@@ -2780,12 +2723,11 @@ with tab_perfil:
 
         with st.container(border=True):
             st.markdown(
-                f"### {rec_general['emoji']} Instrumento sugerido para tu perfil: "
-                f"**{rec_general['tipo']}**"
+                f"### {rec_general['emoji']} **{rec_general['tipo']}**"
             )
             st.markdown(rec_general["descripcion"])
             if rec_general.get("alternativas"):
-                st.markdown(f"**Alternativas:** {' · '.join(rec_general['alternativas'])}")
+                st.markdown(f"**Algunos instrumentos que pueden interesarte:** {' · '.join(rec_general['alternativas'])}")
             st.caption(
                 "Esta es una sugerencia general basada en tu Risk Score y horizonte. "
                 "En el tab **Mi Plan** vas a ver una recomendación específica para cada meta."
