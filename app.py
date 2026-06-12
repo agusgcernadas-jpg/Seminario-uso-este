@@ -412,7 +412,7 @@ def _parse_money_text(text: str) -> float:
     return float(int(digits)) if digits else 0.0
 
 
-def money_input(label: str, key_canonical: str, help: str = None, max_value: float = None) -> float:
+def money_input(label: str, key_canonical: str, help: str = None, max_value: float = None, label_visibility: str = "visible") -> float:
     """
     Input de plata con formato AR en tiempo real (vía install_money_format_js).
 
@@ -437,7 +437,7 @@ def money_input(label: str, key_canonical: str, help: str = None, max_value: flo
         st.session_state[text_key] = _ar_format_pesos(canonical) if canonical > 0 else ""
         st.session_state[shadow_key] = canonical
 
-    raw = st.text_input(label, key=text_key, help=help, placeholder="0,00")
+    raw = st.text_input(label, key=text_key, help=help, placeholder="0,00", label_visibility=label_visibility)
 
     new_value = _parse_money_text(raw)
     if max_value is not None and new_value > max_value:
@@ -830,6 +830,85 @@ st.set_page_config(layout="wide", page_title="Cuaderno de Finanzas", page_icon="
 
 install_money_format_js()
 
+# Hamburguesa: abre el sidebar via setProperty('important') en inline style.
+# setProperty con prioridad 'important' supera cualquier stylesheet de Streamlit/emotion.
+# MutationObserver re-aplica si React reconcilia y sobreescribe los estilos.
+components.html("""
+<script>
+(function() {
+  var doc = window.parent.document;
+  if (doc.getElementById('__hbg')) return;
+
+  // ── Backdrop ───────────────────────────────────────────────────
+  var bd = doc.createElement('div');
+  bd.id = '__hbg_bd';
+  bd.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999997;';
+  doc.body.appendChild(bd);
+
+  // ── FAB ────────────────────────────────────────────────────────
+  var fab = doc.createElement('button');
+  fab.id = '__hbg';
+  fab.setAttribute('aria-label', 'Menú');
+  fab.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>';
+  fab.style.cssText = 'position:fixed;top:0.75rem;left:0.75rem;z-index:999999;width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#00C896,#00A87E);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,200,150,.55);';
+  doc.body.appendChild(fab);
+
+  // ── Propiedades a forzar en el sidebar cuando está abierto ─────
+  var PROPS = ['display','position','left','top','width','min-width','max-width',
+               'height','z-index','transform','visibility','opacity',
+               'overflow','margin-left','transition'];
+  var VALS  = ['flex','fixed','0','0','21rem','21rem','21rem',
+               '100dvh','999998','none','visible','1',
+               'hidden','0','none'];
+
+  var _isOpen = false;
+  var _mo = null;
+
+  function getSb() {
+    return doc.querySelector('[data-testid="stSidebar"]');
+  }
+
+  function applyOpen(sb) {
+    for (var i = 0; i < PROPS.length; i++) {
+      sb.style.setProperty(PROPS[i], VALS[i], 'important');
+    }
+  }
+
+  function openSidebar() {
+    _isOpen = true;
+    bd.style.display = 'block';
+    var sb = getSb();
+    if (sb) {
+      applyOpen(sb);
+      // Observa sólo el sidebar para re-aplicar si React sobreescribe los estilos
+      _mo = new MutationObserver(function() {
+        var sb2 = getSb();
+        if (_isOpen && sb2) applyOpen(sb2);
+      });
+      _mo.observe(sb, { attributes: true, attributeFilter: ['style', 'class'] });
+    }
+  }
+
+  function closeSidebar() {
+    _isOpen = false;
+    bd.style.display = 'none';
+    if (_mo) { _mo.disconnect(); _mo = null; }
+    var sb = getSb();
+    if (sb) {
+      PROPS.forEach(function(p) { sb.style.removeProperty(p); });
+    }
+  }
+
+  function toggle() {
+    _isOpen ? closeSidebar() : openSidebar();
+  }
+
+  fab.addEventListener('click', toggle);
+  bd.addEventListener('click', toggle);
+})();
+</script>
+""", height=0)
+
 components.html("""
 <script>
 (function() {
@@ -973,46 +1052,11 @@ header[data-testid="stHeader"] {
   pointer-events: none !important;
 }
 footer, #MainMenu { display: none !important; }
-/* ── Hamburger button ─────────────────────────────────────────── */
-[data-testid="stSidebarCollapsedControl"] {
-  display: flex !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-  pointer-events: all !important;
-  position: fixed !important;
-  top: 3.2rem !important;
-  left: 0.7rem !important;
-  z-index: 999999 !important;
-  background: #00C896 !important;
-  border-radius: 10px !important;
-  width: 38px !important;
-  height: 38px !important;
-  align-items: center !important;
-  justify-content: center !important;
-  box-shadow: 0 2px 12px rgba(0,200,150,0.5) !important;
-}
-[data-testid="stSidebarCollapsedControl"] button {
-  display: flex !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-  pointer-events: all !important;
-  width: 38px !important;
-  height: 38px !important;
-  align-items: center !important;
-  justify-content: center !important;
-  background: transparent !important;
-  border: none !important;
-  color: #0D1117 !important;
-  padding: 0 !important;
-  cursor: pointer !important;
-}
-[data-testid="stSidebarCollapsedControl"] button svg {
-  fill: #0D1117 !important;
-  stroke: #0D1117 !important;
-  width: 20px !important;
-  height: 20px !important;
-  display: block !important;
-}
+[data-testid="stAppDeployButton"],
+[data-testid="stToolbar"],
+[data-testid="stDecoration"] { display: none !important; }
+/* Hamburger nativo: oculto, reemplazado por FAB en body */
+[data-testid="stSidebarCollapsedControl"] { display: none !important; }
 
 /* ── Quitar línea roja de text inputs ─────────────────────────── */
 [data-testid="stTextInput"] input,
@@ -2054,6 +2098,25 @@ tab_situacion, tab_metas, tab_perfil, tab_plan = st.tabs([
 ])
 
 
+@st.dialog("Campo obligatorio")
+def _modal_ingreso_faltante():
+    st.html("""
+    <div style="font-family:'Inter',sans-serif;padding:0.4rem 0 0.8rem;">
+      <div style="font-size:2rem;text-align:center;margin-bottom:0.7rem;">⚠️</div>
+      <div style="font-size:1rem;font-weight:600;color:var(--ink);text-align:center;margin-bottom:0.5rem;">
+        Ingreso mensual requerido
+      </div>
+      <div style="font-size:0.88rem;color:var(--muted);text-align:center;line-height:1.6;">
+        Completá tu <strong style="color:var(--ink);">sueldo neto mensual</strong>
+        en la solapa <strong style="color:#00C896;">Ingresos</strong>
+        antes de ver tu situación financiera.
+      </div>
+    </div>
+    """)
+    if st.button("Entendido", use_container_width=True, type="primary"):
+        st.rerun()
+
+
 # ── TAB 1: SITUACION ────────────────────────────────────────────────────
 with tab_situacion:
     # Pre-read session state (widgets inside tabs will update these)
@@ -2077,6 +2140,8 @@ with tab_situacion:
     }
 
     # ── Selector de sección (tab bar custom) ──────────────────────────────
+    if st.session_state.pop("_nav_to_egresos", False):
+        st.session_state["_sit_seccion"] = "Egresos"
     _sit_seccion = st.radio(
         "sección",
         ["Ingresos", "Egresos"],
@@ -2133,6 +2198,11 @@ with tab_situacion:
                 "Fondo de emergencia actual", key_canonical="fondo_emerg_valor",
                 help=f"En {moneda_fe_actual}. No incluyas inversiones que tardan en rescatarse.",
             )
+        if float(st.session_state.get("sueldo_valor", 0.0)) > 0:
+            st.html("<div style='height:0.8rem'></div>")
+            if st.button("Continuar a Egresos →", use_container_width=True, type="primary", key="_btn_ir_egresos"):
+                st.session_state["_nav_to_egresos"] = True
+                st.rerun()
     else:
         # Widgets ocultos para que las keys sigan registradas en session_state
         moneda = st.session_state.get("moneda_ingreso", "ARS")
@@ -2168,8 +2238,8 @@ with tab_situacion:
                                       max-width:120px;margin:0 auto;">{_short}</div>
                         </div>
                         """)
-                        st.number_input("monto", min_value=0.0, step=500.0,
-                                        key=f"gasto_{c['id']}", label_visibility="collapsed")
+                        money_input("monto", key_canonical=f"gasto_{c['id']}",
+                                    label_visibility="collapsed")
 
         st.html("""
         <div style="display:flex;align-items:center;gap:0.5rem;margin:0.2rem 0 0.3rem;font-family:'Inter',sans-serif;">
@@ -2200,8 +2270,8 @@ with tab_situacion:
     # ── FULL WIDTH: botón o resultados ─────────────────────────────────────
     deuda_mensual_auto = float(st.session_state.get("gasto_deudas", 0.0))
 
-    if sueldo > 0:
-        # Botón para desbloquear / actualizar resultados
+    if _sit_seccion == "Egresos":
+        # Botón siempre visible — valida sueldo al hacer click
         st.html("""<div style="margin-top:1.6rem;"></div>""")
         _btn_label = "🔄 Actualizar Situación Financiera" if st.session_state.get("situacion_desbloqueada") else "📊 Ver Situación Financiera"
         _bc1, _bc2, _bc3 = st.columns([1, 2, 1])
@@ -2229,9 +2299,14 @@ with tab_situacion:
             </style>
             """)
             if st.button(_btn_label, key="_btn_ver_situacion", type="primary", use_container_width=True):
-                st.session_state.situacion_desbloqueada = True
-                st.session_state._scroll_resultados = True
-                st.rerun()
+                if sueldo <= 0:
+                    _modal_ingreso_faltante()
+                else:
+                    st.session_state.situacion_desbloqueada = True
+                    st.session_state._scroll_resultados = True
+                    st.rerun()
+
+    if _sit_seccion == "Egresos" and sueldo > 0:
 
         if st.session_state.get("situacion_desbloqueada"):
             # anchor para el scroll
@@ -2307,16 +2382,88 @@ with tab_situacion:
             </div>
             """)
             if disponible_bruto > 0:
-                st.info(f"Excedente disponible: **{fmt(disponible_bruto, moneda)}**")
                 _ad_prev = float(st.session_state.get("ahorro_dispuesto_valor", 0.0))
                 _ad_max = float(disponible_bruto)
                 if _ad_prev <= 0 or _ad_prev > _ad_max:
                     st.session_state["ahorro_dispuesto_valor"] = _ad_max * DEFAULT_AHORRO_RATIO
+                _cur_aho = float(st.session_state.get("ahorro_dispuesto_valor", _ad_max * DEFAULT_AHORRO_RATIO))
+                _pct_aho = (_cur_aho / _ad_max * 100) if _ad_max > 0 else 0
+                st.html(f"""
+                <div style="font-family:'Inter',sans-serif;margin:0.2rem 0 0.1rem;">
+                  <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.12em;
+                              color:var(--muted);font-weight:600;margin-bottom:0.35rem;">
+                    ¿Cuánto vas a destinar al ahorro/inversión?
+                  </div>
+                  <div style="display:flex;align-items:baseline;gap:0.55rem;">
+                    <span style="font-size:1.55rem;font-weight:700;color:#00C896;
+                                 letter-spacing:-0.03em;line-height:1;">
+                      {fmt(_cur_aho, moneda)}
+                    </span>
+                    <span style="font-size:0.72rem;color:var(--muted);">
+                      {_pct_aho:.0f}% del excedente
+                    </span>
+                  </div>
+                </div>
+                <style>
+                  /* track */ [data-testid="stSlider"] [data-baseweb="slider"] > div:first-child {{
+                    background: rgba(230,237,243,0.1) !important;
+                    border-radius: 99px !important;
+                  }}
+                  /* fill */ [data-testid="stSlider"] [data-baseweb="slider"] [role="progressbar"] {{
+                    background: #00C896 !important;
+                    border-radius: 99px !important;
+                  }}
+                  /* thumb */ [data-testid="stSlider"] [role="slider"] {{
+                    background: #00C896 !important;
+                    border-color: #00C896 !important;
+                    box-shadow: 0 0 0 4px rgba(0,200,150,0.2) !important;
+                    width: 18px !important; height: 18px !important;
+                  }}
+                  /* ocultar labels min/max nativos */
+                  [data-testid="stSlider"] [data-testid="stTickBarMin"],
+                  [data-testid="stSlider"] [data-testid="stTickBarMax"] {{
+                    display: none !important;
+                  }}
+                </style>
+                """)
                 ahorro_dispuesto = st.slider(
-                    "¿Cuánto vas a destinar al ahorro/inversión?",
+                    "ahorro",
                     min_value=0.0, max_value=_ad_max, step=500.0,
                     key="ahorro_dispuesto_valor",
+                    label_visibility="collapsed",
                 )
+                components.html("""
+                <script>
+                (function() {
+                  function formatAR(txt) {
+                    var n = parseFloat(txt);
+                    if (isNaN(n)) return txt;
+                    return Math.round(n).toLocaleString('es-AR') + ',00';
+                  }
+                  var _busy = false;
+                  function reformat() {
+                    if (_busy) return;
+                    _busy = true;
+                    try {
+                      var doc = window.parent.document;
+                      doc.querySelectorAll('[data-testid="stSlider"] p, [data-testid="stSlider"] [data-testid="stTickBarMin"], [data-testid="stSlider"] [data-testid="stTickBarMax"]').forEach(function(el) {
+                        if (el.children.length === 0) {
+                          var txt = el.textContent.trim();
+                          if (/^\d[\d.]*(\.\d+)?$/.test(txt)) {
+                            var fmt = formatAR(txt);
+                            if (el.textContent !== fmt) el.textContent = fmt;
+                          }
+                        }
+                      });
+                    } catch(e) {}
+                    _busy = false;
+                  }
+                  var obs = new MutationObserver(reformat);
+                  obs.observe(window.parent.document.body, { childList: true, subtree: true });
+                  reformat();
+                })();
+                </script>
+                """, height=0)
             else:
                 st.error("🚨 Sin margen de ahorro.")
 
@@ -2366,7 +2513,7 @@ with tab_situacion:
                 indicadores = calcular_indicadores_salud(
                     sueldo, total_gastos, ahorro_dispuesto, meses_fondo, deuda_mensual_auto
                 )
-                if meses_fondo < 1 and ahorro_dispuesto > 0:
+                if fondo_emerg_monto <= 0 and ahorro_dispuesto > 0:
                     st.error("🚨 **Prioridad crítica:** No tenés fondo de emergencia. Antes de invertir, acumulá al menos 3 meses de gastos.")
 
                 color_estado = {"ok": "#2ECC71", "warning": "#F1C40F", "error": "#E74C3C"}
