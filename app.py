@@ -136,8 +136,8 @@ TOOLTIPS_INSTRUMENTOS = {
 
 # Defaults editables por el usuario. Inflación y rendimiento son nominales anuales en %.
 SUPUESTOS_DEFAULT = {
-    "ARS": {"inflacion": 80.0, "rendimiento": 90.0},
-    "USD": {"inflacion": 3.0, "rendimiento": 5.0},
+    "ARS": {"inflacion": 29.5, "rendimiento": 90.0},
+    "USD": {"inflacion": 4.2, "rendimiento": 5.0},
     "EUR": {"inflacion": 2.5, "rendimiento": 4.0},
 }
 # ARS por 1 unidad de la moneda. ARS siempre 1.0 (pivote).
@@ -1690,9 +1690,8 @@ elif not st.session_state.get("splash_shown", False):
           <!-- Subtítulo -->
           <div class="ob3" style="font-size:0.95rem;color:rgba(255,255,255,0.52);
                                    line-height:1.65;max-width:320px;margin:0 auto;">
-            Dejar tus pesos quietos puede costarte hasta el 90%
-            de tu poder de compra. Cada peso importa y el tiempo
-            no espera.
+            La inflación no descansa, y tus ahorros tampoco deberían hacerlo.
+            Cada día que tu dinero queda quieto en la cuenta, pierde valor real.
           </div>
 
         </div>
@@ -2772,6 +2771,43 @@ with tab_metas:
         </div>
         """)
         st.stop()
+
+    _infl_ars_actual = float(st.session_state.supuestos["ARS"]["inflacion"])
+    _infl_usd_actual = float(st.session_state.supuestos["USD"]["inflacion"])
+    _usando_defaults_macro = (
+        _infl_ars_actual == SUPUESTOS_DEFAULT["ARS"]["inflacion"]
+        and _infl_usd_actual == SUPUESTOS_DEFAULT["USD"]["inflacion"]
+    )
+    if _usando_defaults_macro:
+        _msg_macro = (
+            "Estamos proyectando con valores preseteados de inflación anual: "
+            f"<strong>ARS {_infl_ars_actual:.1f}%</strong> y "
+            f"<strong>USD {_infl_usd_actual:.1f}%</strong>. "
+            "Si conocés cifras más actuales podés ajustarlas en "
+            "<strong>Configuración → Supuestos macro</strong> "
+            "(barra lateral). Si no, dejalo así: son referencias razonables para hoy."
+        )
+    else:
+        _msg_macro = (
+            "Estás proyectando con tus propios supuestos: "
+            f"<strong>ARS {_infl_ars_actual:.1f}%</strong> y "
+            f"<strong>USD {_infl_usd_actual:.1f}%</strong> de inflación anual. "
+            "Podés volver a los valores preseteados desde "
+            "<strong>Configuración → Supuestos macro</strong>."
+        )
+    st.html(f"""
+    <div style="background:rgba(13,45,107,0.45);border-left:3px solid #3B82F6;
+                border-radius:0 8px 8px 0;padding:0.85rem 1.1rem;
+                margin:0.4rem 0 1.2rem 0;font-family:'Inter',sans-serif;">
+      <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.14em;
+                  color:#3B82F6;font-weight:700;margin-bottom:0.35rem;">
+        Supuestos macroeconómicos
+      </div>
+      <div style="font-size:0.88rem;color:#E6EDF3;line-height:1.55;">
+        {_msg_macro}
+      </div>
+    </div>
+    """)
 
     if st.session_state.objetivos:
         tiene_fondo = any(o.get("Categoría") == "Fondo de Emergencia" for o in st.session_state.objetivos)
