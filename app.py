@@ -1329,6 +1329,7 @@ for _k, _v in [
     ("gastos_valor", 0.0),
     ("ahorro_dispuesto_valor", 0.0),
     ("fondo_emerg_valor", 0.0),
+    ("moneda_fondo_emerg", "ARS"),
     ("deuda_mensual_valor", 0.0),
     ("objetivos_enriquecidos", []),
 ]:
@@ -1351,6 +1352,7 @@ def serializar_config():
             "moneda_ingreso": st.session_state.get("moneda_ingreso", "ARS"),
             "sueldo_valor": float(st.session_state.get("sueldo_valor", 0.0)),
             "fondo_emerg_valor": float(st.session_state.get("fondo_emerg_valor", 0.0)),
+            "moneda_fondo_emerg": st.session_state.get("moneda_fondo_emerg", "ARS"),
             "ahorro_dispuesto_valor": float(st.session_state.get("ahorro_dispuesto_valor", 0.0)),
         },
     }
@@ -1386,6 +1388,8 @@ def _aplicar_config(config: dict) -> int:
         sit = config["situacion"]
         if sit.get("moneda_ingreso") in MONEDAS:
             st.session_state.moneda_ingreso = sit["moneda_ingreso"]
+        if sit.get("moneda_fondo_emerg") in MONEDAS:
+            st.session_state.moneda_fondo_emerg = sit["moneda_fondo_emerg"]
         for k in ("sueldo_valor", "fondo_emerg_valor", "ahorro_dispuesto_valor"):
             if k in sit:
                 try:
@@ -2117,8 +2121,18 @@ with tab_situacion:
                        color:#3B82F6;font-weight:700;">¿Cuánto tenés ahorrado para emergencias?</span>
         </div>
         """)
-        fondo_emerg_monto = money_input("Fondo de emergencia actual", key_canonical="fondo_emerg_valor",
-                                        help="No incluyas inversiones que tardan en rescatarse.")
+        moneda_fe_actual = st.session_state.get("moneda_fondo_emerg", "ARS")
+        col_moneda_fe, col_monto_fe = st.columns([1, 2])
+        with col_moneda_fe:
+            moneda_fe_actual = st.selectbox(
+                "Moneda", MONEDAS, index=MONEDAS.index(moneda_fe_actual),
+                key="moneda_fondo_emerg",
+            )
+        with col_monto_fe:
+            fondo_emerg_monto = money_input(
+                "Fondo de emergencia actual", key_canonical="fondo_emerg_valor",
+                help=f"En {moneda_fe_actual}. No incluyas inversiones que tardan en rescatarse.",
+            )
     else:
         # Widgets ocultos para que las keys sigan registradas en session_state
         moneda = st.session_state.get("moneda_ingreso", "ARS")
@@ -2339,7 +2353,16 @@ with tab_situacion:
 
             with _diag_col:
                 gastos_para_fe = total_gastos if total_gastos > 0 else 1.0
-                meses_fondo = fondo_emerg_monto / gastos_para_fe if gastos_para_fe > 0 else 0.0
+                _moneda_fe_calc = st.session_state.get("moneda_fondo_emerg", moneda)
+                _tipos_cambio_fe = {
+                    "ARS": 1.0,
+                    "USD": float(st.session_state.tc_USD),
+                    "EUR": float(st.session_state.tc_EUR),
+                }
+                fondo_emerg_monto_conv = convertir(
+                    fondo_emerg_monto, _moneda_fe_calc, moneda, _tipos_cambio_fe,
+                )
+                meses_fondo = fondo_emerg_monto_conv / gastos_para_fe if gastos_para_fe > 0 else 0.0
                 indicadores = calcular_indicadores_salud(
                     sueldo, total_gastos, ahorro_dispuesto, meses_fondo, deuda_mensual_auto
                 )
@@ -2499,8 +2522,15 @@ with tab_perfil:
                     _fr = float(st.session_state.get("fondo_emerg_valor", 0))
                     _dr = float(st.session_state.get("deuda_mensual_valor", 0))
                     _ar = float(st.session_state.get("ahorro_dispuesto_valor", 0))
+                    _mfe_origen = st.session_state.get("moneda_fondo_emerg", moneda)
+                    _tc_fe = {
+                        "ARS": 1.0,
+                        "USD": float(st.session_state.tc_USD),
+                        "EUR": float(st.session_state.tc_EUR),
+                    }
+                    _fr_conv = convertir(_fr, _mfe_origen, moneda, _tc_fe)
                     _gfe = _gr if _gr > 0 else 1
-                    _mfe = _fr / _gfe
+                    _mfe = _fr_conv / _gfe
                     _sce = 100 if _mfe>=6 else (75 if _mfe>=3 else (40 if _mfe>=1 else (15 if _mfe>0 else 0)))
                     _rd  = _dr / _sr if _sr > 0 else 0
                     _scd = 100 if _rd<=0.10 else (60 if _rd<=0.30 else (25 if _rd<=0.50 else 0))
@@ -3000,6 +3030,7 @@ with tab_plan:
         gastos_ctx = float(st.session_state.get("gastos_valor", 0.0))
         ahorro_ctx = float(st.session_state.get("ahorro_dispuesto_valor", 0.0))
         fondo_ctx = float(st.session_state.get("fondo_emerg_valor", 0.0))
+        moneda_fondo_ctx = st.session_state.get("moneda_fondo_emerg", moneda)
         deuda_ctx = float(st.session_state.get("deuda_mensual_valor", 0.0))
 
         contexto_usuario = (
@@ -3007,7 +3038,7 @@ with tab_plan:
             f"- Ingreso mensual: {fmt(sueldo_ctx, moneda)}\n"
             f"- Gastos totales mensuales: {fmt(gastos_ctx, moneda)}\n"
             f"- Ahorro dispuesto al mes: {fmt(ahorro_ctx, moneda)}\n"
-            f"- Fondo de emergencia actual: {fmt(fondo_ctx, moneda)}\n"
+            f"- Fondo de emergencia actual: {fmt(fondo_ctx, moneda_fondo_ctx)}\n"
             f"- Cuotas de deuda mensuales: {fmt(deuda_ctx, moneda)}\n\n"
             "## Perfil de inversor\n"
             f"- Risk Score: {risk_score} ({perfil_label_show})\n"
